@@ -41,8 +41,6 @@ class BehaviorAnalyzer:
 
         self.total_frames += 1
 
-        if ear_avg > self.EYE_CONTACT_THRESH:
-           self.eye_contact_frames += 1
 
         if ear_avg < self.EYE_AR_THRESH:
             self.blink_frame_counter += 1
