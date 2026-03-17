@@ -7,6 +7,10 @@ import time
 
 from behavior_analyzer import BehaviorAnalyzer
 
+LEFT_IRIS = [474, 475, 476, 477]
+LEFT_EYE_LEFT_CORNER = 33
+LEFT_EYE_RIGHT_CORNER = 133
+
 # -------- Face Mesh --------
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
@@ -34,7 +38,24 @@ def calculate_ear(eye_points):
 LEFT_EYE = [33, 159, 158, 133, 153, 145]
 RIGHT_EYE = [362, 386, 387, 263, 373, 374]
 
+def get_landmark_coords(landmarks, index, w, h):
+    lm = landmarks[index]
+    return int(lm.x * w), int(lm.y * h)
+
+def get_iris_center(landmarks, iris_indices, w, h):
+    points = [get_landmark_coords(landmarks, i, w, h) for i in iris_indices]
+    x = int(np.mean([p[0] for p in points]))
+    y = int(np.mean([p[1] for p in points]))
+    return x, y
+
+def get_gaze_ratio(iris_x, left_x, right_x):
+    eye_width = right_x - left_x
+    if eye_width == 0:
+        return 0.5
+    return (iris_x - left_x) / eye_width
+
 # -------- Video --------
+
 cap = cv.VideoCapture(0)
 fps = cap.get(cv.CAP_PROP_FPS)
 
@@ -91,6 +112,8 @@ WINDOW_SECONDS = 2
 SESSION_DURATION = 60  # seconds
 
 
+analyzer.eye_contact_frames = 0
+analyzer.total_frames = 0
 while True:
     ret, img = cap.read()
     
@@ -171,7 +194,31 @@ while True:
         else:
              gaze_stability_score = 0         
 
+        # ---- IRIS BASED GAZE ----
+        left_corner = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_LEFT_CORNER, width, height)
+        right_corner = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_RIGHT_CORNER, width, height)
 
+        iris_center = get_iris_center(face_landmarks.landmark, LEFT_IRIS, width, height)
+
+        # Draw iris
+        cv.circle(img, iris_center, 3, (0, 255, 0), -1)
+
+        # Gaze ratio
+        gaze_ratio = get_gaze_ratio(iris_center[0], left_corner[0], right_corner[0])
+
+        # Classify gaze
+        if gaze_ratio < 0.35:
+            gaze_direction = "LEFT"
+        elif gaze_ratio > 0.65:
+            gaze_direction = "RIGHT"
+        else:
+            gaze_direction = "CENTER"
+
+        # ---- TRUE EYE CONTACT ----
+        if gaze_direction == "CENTER":
+            analyzer.eye_contact_frames += 1
+
+        analyzer.total_frames += 1
 
         
 
@@ -281,12 +328,21 @@ while True:
         eye_contact_pct = (analyzer.eye_contact_frames / analyzer.total_frames) * 100 if analyzer.total_frames > 0 else 0
 
         cv.putText(img,
-           f"Eye Contact: {eye_contact_pct:.1f}%",
-           (30, 330),
-           cv.FONT_HERSHEY_SIMPLEX,
-           0.7,
-           (0, 255, 0),
-           2)
+          f"Eye Contact (REAL): {eye_contact_pct:.1f}%",
+          (30, 330),
+            cv.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 0),
+            2)
+
+        cv.putText(img,
+            f"Gaze: {gaze_direction}",
+            (30, 360),
+            cv.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 255, 0),
+            2)
+    
     # -------- Show Frame --------
     cv.imshow("Face Mesh Video", img)
 
