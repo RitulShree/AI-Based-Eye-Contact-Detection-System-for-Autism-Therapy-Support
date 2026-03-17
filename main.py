@@ -212,9 +212,9 @@ while True:
         gaze_ratio = get_gaze_ratio(iris_center[0], left_corner[0], right_corner[0])
 
         # Classify gaze
-        if gaze_ratio < 0.35:
+        if gaze_ratio < 0.30:
             gaze_direction = "LEFT"
-        elif gaze_ratio > 0.65:
+        elif gaze_ratio > 0.70:
             gaze_direction = "RIGHT"
         else:
             gaze_direction = "CENTER"
