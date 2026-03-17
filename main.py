@@ -93,6 +93,11 @@ SESSION_DURATION = 60  # seconds
 
 while True:
     ret, img = cap.read()
+
+    current_time = time.time() - analyzer.start_time
+    if current_time >= SESSION_DURATION:
+        print("Session duration reached. Ending session...")
+        break
     
    
     if not ret:
@@ -187,7 +192,7 @@ while True:
             2
         )
         current_time = time.time() - analyzer.start_time
-        current_time = time.time() - analyzer.start_time
+        
 
         # ---- Auto Stop Session After Fixed Time ----
         if current_time >= SESSION_DURATION:
@@ -347,4 +352,4 @@ print("FILE EXISTS:", os.path.isfile("dataset/gaze_dataset.csv"))
 print("Session saved to CSV successfully.")
 
 cap.release()
-cv.destroyAllWindows()
+cv.destroyAllWindows() 
