@@ -7,6 +7,13 @@ import time
 
 from behavior_analyzer import BehaviorAnalyzer
 
+LEFT_IRIS = [474, 475, 476, 477]
+LEFT_EYE_LEFT_CORNER = 33
+LEFT_EYE_RIGHT_CORNER = 133
+RIGHT_IRIS = [469, 470, 471, 472]
+RIGHT_EYE_LEFT_CORNER = 362
+RIGHT_EYE_RIGHT_CORNER = 263
+
 # -------- Face Mesh --------
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
@@ -34,7 +41,24 @@ def calculate_ear(eye_points):
 LEFT_EYE = [33, 159, 158, 133, 153, 145]
 RIGHT_EYE = [362, 386, 387, 263, 373, 374]
 
+def get_landmark_coords(landmarks, index, w, h):
+    lm = landmarks[index]
+    return int(lm.x * w), int(lm.y * h)
+
+def get_iris_center(landmarks, iris_indices, w, h):
+    points = [get_landmark_coords(landmarks, i, w, h) for i in iris_indices]
+    x = int(np.mean([p[0] for p in points]))
+    y = int(np.mean([p[1] for p in points]))
+    return x, y
+
+def get_gaze_ratio(iris_x, left_x, right_x):
+    eye_width = right_x - left_x
+    if eye_width == 0:
+        return 0.5
+    return (iris_x - left_x) / eye_width
+
 # -------- Video --------
+
 cap = cv.VideoCapture(0)
 fps = cap.get(cv.CAP_PROP_FPS)
 
@@ -90,14 +114,42 @@ movement_history = []
 WINDOW_SECONDS = 2
 SESSION_DURATION = 60  # seconds
 
+gaze_history = []
+analyzer.eye_contact_frames = 0
+analyzer.total_frames = 0
+session_done = False
+
+def get_head_pose(landmarks, w, h):
+    # Key points
+    nose = get_landmark_coords(landmarks, 1, w, h)
+    chin = get_landmark_coords(landmarks, 152, w, h)
+    left_eye = get_landmark_coords(landmarks, 33, w, h)
+    right_eye = get_landmark_coords(landmarks, 263, w, h)
+
+    # Convert to numpy
+    nose = np.array(nose)
+    chin = np.array(chin)
+    left_eye = np.array(left_eye)
+    right_eye = np.array(right_eye)
+
+    # Horizontal head direction
+    eye_center = (left_eye + right_eye) / 2
+    dx = nose[0] - eye_center[0]
+
+    # Vertical direction
+    dy = nose[1] - eye_center[1]
+
+    return dx, dy
 
 while True:
     ret, img = cap.read()
     
+
    
     if not ret:
          print("Video ended or cannot read frame")
          break
+    analyzer.total_frames += 1
 
     # img = rescale(img)
     height, width, _ = img.shape
@@ -171,10 +223,82 @@ while True:
         else:
              gaze_stability_score = 0         
 
+        # ---- IRIS BASED GAZE (IMPROVED: BOTH EYES) ----
 
+        # LEFT EYE
+        left_corner_L = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_LEFT_CORNER, width, height)
+        right_corner_L = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_RIGHT_CORNER, width, height)
+        iris_L = get_iris_center(face_landmarks.landmark, LEFT_IRIS, width, height)
 
+        # RIGHT EYE
+        left_corner_R = get_landmark_coords(face_landmarks.landmark, RIGHT_EYE_LEFT_CORNER, width, height)
+        right_corner_R = get_landmark_coords(face_landmarks.landmark, RIGHT_EYE_RIGHT_CORNER, width, height)
+        iris_R = get_iris_center(face_landmarks.landmark, RIGHT_IRIS, width, height)
+
+        # Draw iris points
+        cv.circle(img, iris_L, 3, (0, 255, 0), -1)
+        cv.circle(img, iris_R, 3, (0, 255, 0), -1)
+
+        # Compute gaze ratios
+        ratio_L = get_gaze_ratio(iris_L[0], left_corner_L[0], right_corner_L[0])
+        ratio_R = get_gaze_ratio(iris_R[0], left_corner_R[0], right_corner_R[0])
+
+        # Average both eyes
+        gaze_ratio = (ratio_L + ratio_R) / 2
+
+        gaze_history.append(gaze_ratio)
+
+        if len(gaze_history) > 5:
+            gaze_history.pop(0)
+
+        gaze_ratio = np.mean(gaze_history)
+
+        if gaze_ratio < 0.30:
+            gaze_direction = "LEFT"
+        elif gaze_ratio > 0.70:
+            gaze_direction = "RIGHT"
+        else:
+            gaze_direction = "CENTER"
+        
+        
+        
         
 
+        
+        dx, dy = get_head_pose(face_landmarks.landmark, width, height)
+
+        face_width = abs(right_eye_pts[0][0] - left_eye_pts[0][0])
+
+        if face_width != 0:
+            normalized_dx = dx / face_width
+        else:
+            normalized_dx = 0
+
+        if abs(normalized_dx) < 0.1:
+            head_direction = "CENTER"
+        elif normalized_dx > 0:
+            head_direction = "RIGHT"
+        else:
+            head_direction = "LEFT"
+
+        # ---- TRUE EYE CONTACT ----
+        if gaze_direction == "CENTER" and head_direction == "CENTER":
+            analyzer.eye_contact_frames += 1
+        
+        # Eye center
+        eye_center = ((left_eye_pts[0][0] + right_eye_pts[0][0]) // 2,
+                      (left_eye_pts[0][1] + right_eye_pts[0][1]) // 2)
+        face_width = abs(right_eye_pts[0][0] - left_eye_pts[0][0])
+        # Use dx to draw direction
+        scale = face_width * 1  # you can tweak this
+
+        # Clamp dx to avoid huge lines
+        dx_clamped = max(min(dx, 1), -1)
+
+        end_point = (int(eye_center[0] + dx_clamped * scale),
+             int(eye_center[1]))
+
+        cv.line(img, eye_center, end_point, (255, 0, 255), 2)
        
        
         cv.putText(
@@ -187,12 +311,13 @@ while True:
             2
         )
         current_time = time.time() - analyzer.start_time
-        current_time = time.time() - analyzer.start_time
+        
 
         # ---- Auto Stop Session After Fixed Time ----
         if current_time >= SESSION_DURATION:
-            print("Session duration reached. Ending session...")
-            break
+           print("Session duration reached. Ending session...")
+           session_done = True
+           break
 
         if current_time > 0:
              blink_rate_live = (analyzer.blink_count / current_time) * 60
@@ -281,12 +406,34 @@ while True:
         eye_contact_pct = (analyzer.eye_contact_frames / analyzer.total_frames) * 100 if analyzer.total_frames > 0 else 0
 
         cv.putText(img,
-           f"Eye Contact: {eye_contact_pct:.1f}%",
-           (30, 330),
-           cv.FONT_HERSHEY_SIMPLEX,
-           0.7,
-           (0, 255, 0),
-           2)
+          f"Eye Contact (REAL): {eye_contact_pct:.1f}%",
+          (30, 330),
+            cv.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 0),
+            2)
+
+        cv.putText(img,
+            f"Gaze: {gaze_direction}",
+            (30, 360),
+            cv.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 255, 0),
+            2)
+        cv.putText(img, f"Ratio: {gaze_ratio:.2f}", (30, 390),
+           cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+        
+        cv.putText(img,
+            f"Head: {head_direction}",
+            (30, 420),
+            cv.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 0, 255),
+            2)
+    
+    if session_done:
+     break
+    
     # -------- Show Frame --------
     cv.imshow("Face Mesh Video", img)
 
