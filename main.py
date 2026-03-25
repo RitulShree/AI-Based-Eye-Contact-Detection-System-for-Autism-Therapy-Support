@@ -10,6 +10,9 @@ from behavior_analyzer import BehaviorAnalyzer
 LEFT_IRIS = [474, 475, 476, 477]
 LEFT_EYE_LEFT_CORNER = 33
 LEFT_EYE_RIGHT_CORNER = 133
+RIGHT_IRIS = [469, 470, 471, 472]
+RIGHT_EYE_LEFT_CORNER = 362
+RIGHT_EYE_RIGHT_CORNER = 263
 
 # -------- Face Mesh --------
 mp_face_mesh = mp.solutions.face_mesh
@@ -111,21 +114,42 @@ movement_history = []
 WINDOW_SECONDS = 2
 SESSION_DURATION = 60  # seconds
 
-
+gaze_history = []
 analyzer.eye_contact_frames = 0
 analyzer.total_frames = 0
+session_done = False
+
+def get_head_pose(landmarks, w, h):
+    # Key points
+    nose = get_landmark_coords(landmarks, 1, w, h)
+    chin = get_landmark_coords(landmarks, 152, w, h)
+    left_eye = get_landmark_coords(landmarks, 33, w, h)
+    right_eye = get_landmark_coords(landmarks, 263, w, h)
+
+    # Convert to numpy
+    nose = np.array(nose)
+    chin = np.array(chin)
+    left_eye = np.array(left_eye)
+    right_eye = np.array(right_eye)
+
+    # Horizontal head direction
+    eye_center = (left_eye + right_eye) / 2
+    dx = nose[0] - eye_center[0]
+
+    # Vertical direction
+    dy = nose[1] - eye_center[1]
+
+    return dx, dy
+
 while True:
     ret, img = cap.read()
-
-    current_time = time.time() - analyzer.start_time
-    if current_time >= SESSION_DURATION:
-        print("Session duration reached. Ending session...")
-        break
     
+
    
     if not ret:
          print("Video ended or cannot read frame")
          break
+    analyzer.total_frames += 1
 
     # img = rescale(img)
     height, width, _ = img.shape
@@ -199,34 +223,82 @@ while True:
         else:
              gaze_stability_score = 0         
 
-        # ---- IRIS BASED GAZE ----
-        left_corner = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_LEFT_CORNER, width, height)
-        right_corner = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_RIGHT_CORNER, width, height)
+        # ---- IRIS BASED GAZE (IMPROVED: BOTH EYES) ----
 
-        iris_center = get_iris_center(face_landmarks.landmark, LEFT_IRIS, width, height)
+        # LEFT EYE
+        left_corner_L = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_LEFT_CORNER, width, height)
+        right_corner_L = get_landmark_coords(face_landmarks.landmark, LEFT_EYE_RIGHT_CORNER, width, height)
+        iris_L = get_iris_center(face_landmarks.landmark, LEFT_IRIS, width, height)
 
-        # Draw iris
-        cv.circle(img, iris_center, 3, (0, 255, 0), -1)
+        # RIGHT EYE
+        left_corner_R = get_landmark_coords(face_landmarks.landmark, RIGHT_EYE_LEFT_CORNER, width, height)
+        right_corner_R = get_landmark_coords(face_landmarks.landmark, RIGHT_EYE_RIGHT_CORNER, width, height)
+        iris_R = get_iris_center(face_landmarks.landmark, RIGHT_IRIS, width, height)
 
-        # Gaze ratio
-        gaze_ratio = get_gaze_ratio(iris_center[0], left_corner[0], right_corner[0])
+        # Draw iris points
+        cv.circle(img, iris_L, 3, (0, 255, 0), -1)
+        cv.circle(img, iris_R, 3, (0, 255, 0), -1)
 
-        # Classify gaze
+        # Compute gaze ratios
+        ratio_L = get_gaze_ratio(iris_L[0], left_corner_L[0], right_corner_L[0])
+        ratio_R = get_gaze_ratio(iris_R[0], left_corner_R[0], right_corner_R[0])
+
+        # Average both eyes
+        gaze_ratio = (ratio_L + ratio_R) / 2
+
+        gaze_history.append(gaze_ratio)
+
+        if len(gaze_history) > 5:
+            gaze_history.pop(0)
+
+        gaze_ratio = np.mean(gaze_history)
+
         if gaze_ratio < 0.30:
             gaze_direction = "LEFT"
         elif gaze_ratio > 0.70:
             gaze_direction = "RIGHT"
         else:
             gaze_direction = "CENTER"
-
-        # ---- TRUE EYE CONTACT ----
-        if gaze_direction == "CENTER":
-            analyzer.eye_contact_frames += 1
-
-        analyzer.total_frames += 1
-
+        
+        
+        
         
 
+        
+        dx, dy = get_head_pose(face_landmarks.landmark, width, height)
+
+        face_width = abs(right_eye_pts[0][0] - left_eye_pts[0][0])
+
+        if face_width != 0:
+            normalized_dx = dx / face_width
+        else:
+            normalized_dx = 0
+
+        if abs(normalized_dx) < 0.1:
+            head_direction = "CENTER"
+        elif normalized_dx > 0:
+            head_direction = "RIGHT"
+        else:
+            head_direction = "LEFT"
+
+        # ---- TRUE EYE CONTACT ----
+        if gaze_direction == "CENTER" and head_direction == "CENTER":
+            analyzer.eye_contact_frames += 1
+        
+        # Eye center
+        eye_center = ((left_eye_pts[0][0] + right_eye_pts[0][0]) // 2,
+                      (left_eye_pts[0][1] + right_eye_pts[0][1]) // 2)
+        face_width = abs(right_eye_pts[0][0] - left_eye_pts[0][0])
+        # Use dx to draw direction
+        scale = face_width * 1  # you can tweak this
+
+        # Clamp dx to avoid huge lines
+        dx_clamped = max(min(dx, 1), -1)
+
+        end_point = (int(eye_center[0] + dx_clamped * scale),
+             int(eye_center[1]))
+
+        cv.line(img, eye_center, end_point, (255, 0, 255), 2)
        
        
         cv.putText(
@@ -243,8 +315,9 @@ while True:
 
         # ---- Auto Stop Session After Fixed Time ----
         if current_time >= SESSION_DURATION:
-            print("Session duration reached. Ending session...")
-            break
+           print("Session duration reached. Ending session...")
+           session_done = True
+           break
 
         if current_time > 0:
              blink_rate_live = (analyzer.blink_count / current_time) * 60
@@ -347,6 +420,19 @@ while True:
             0.7,
             (255, 255, 0),
             2)
+        cv.putText(img, f"Ratio: {gaze_ratio:.2f}", (30, 390),
+           cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+        
+        cv.putText(img,
+            f"Head: {head_direction}",
+            (30, 420),
+            cv.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 0, 255),
+            2)
+    
+    if session_done:
+     break
     
     # -------- Show Frame --------
     cv.imshow("Face Mesh Video", img)
@@ -408,4 +494,4 @@ print("FILE EXISTS:", os.path.isfile("dataset/gaze_dataset.csv"))
 print("Session saved to CSV successfully.")
 
 cap.release()
-cv.destroyAllWindows() 
+cv.destroyAllWindows()

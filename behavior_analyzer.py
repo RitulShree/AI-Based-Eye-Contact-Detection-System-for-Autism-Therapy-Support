@@ -39,7 +39,7 @@ class BehaviorAnalyzer:
     # ---------------- BLINK UPDATE ----------------
     def update_blink(self, ear_avg):
 
-        self.total_frames += 1
+        
 
 
         if ear_avg < self.EYE_AR_THRESH:
