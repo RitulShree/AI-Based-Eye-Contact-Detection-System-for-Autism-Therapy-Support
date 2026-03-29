@@ -36,41 +36,53 @@ class BehaviorAnalyzer:
         # ---- Timing ----
         self.start_time = time.time()
 
+        self.eye_closed = False
+        self.blink_start_time = 0
+        self.last_blink_time = None
+        self.ear_history = []
+
     # ---------------- BLINK UPDATE ----------------
     def update_blink(self, ear_avg):
+        # Store EAR history
+        self.ear_history.append(ear_avg)
 
-        
+        # Keep only last 5 values
+        if len(self.ear_history) > 5:
+            self.ear_history.pop(0)
+        current_time = time.time()
 
+        # -------- Eye Closed --------
+        if ear_avg < self.EYE_AR_THRESH and np.mean(self.ear_history) < self.EYE_AR_THRESH:
+            if not self.eye_closed:
+                self.eye_closed = True
+                self.blink_start_time = current_time
 
-        if ear_avg < self.EYE_AR_THRESH:
-            self.blink_frame_counter += 1
-
+        # -------- Eye Open --------
         else:
+            if self.eye_closed:
+                self.eye_closed = False
+                closure_time = current_time - self.blink_start_time
 
-            if self.blink_frame_counter >= self.CONSEC_FRAMES:
+                # Ignore noise (very short closures)
+                if closure_time < 0.08:
+                    return
 
-                closure_time = self.blink_frame_counter / self.fps
-
-                # ---- Spontaneous blink ----
-                if 0.08 <= closure_time <= 0.5:
-
+                # ---- Normal Blink ----
+                if closure_time <= 0.5:
                     self.blink_count += 1
                     self.closure_durations.append(closure_time)
 
-                    current_time = time.time() - self.start_time
-                    self.blink_timestamps.append(current_time)
+                    session_time = current_time - self.start_time
+                    self.blink_timestamps.append(session_time)
 
                     if len(self.blink_timestamps) >= 2:
                         ibi = self.blink_timestamps[-1] - self.blink_timestamps[-2]
                         self.ibi_values.append(ibi)
 
-                # ---- Long closure ----
-                elif closure_time > 0.5:
-
+                # ---- Long Closure ----
+                else:
                     self.long_closure_count += 1
                     self.long_closure_durations.append(closure_time)
-
-            self.blink_frame_counter = 0
 
     # ---------------- GAZE UPDATE ----------------
     def update_gaze(self, movement_value):
