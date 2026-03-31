@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 # -------- Load Both CSVs --------
 cols = [
@@ -74,7 +76,7 @@ lr_model = LogisticRegression(
     random_state=42
 )
 lr_model.fit(X_train_scaled, y_train)
-print("Logistic Regression trained ✅")
+print("Logistic Regression trained ")
 
 # -------- Train Random Forest --------
 rf_model = RandomForestClassifier(
@@ -84,4 +86,22 @@ rf_model = RandomForestClassifier(
     random_state=42
 )
 rf_model.fit(X_train_scaled, y_train)
-print("Random Forest trained ✅")
+print("Random Forest trained ")
+# -------- Evaluate Logistic Regression --------
+lr_pred = lr_model.predict(X_test_scaled)
+print("=== Logistic Regression ===")
+print("Accuracy:", accuracy_score(y_test, lr_pred))
+print(classification_report(y_test, lr_pred, target_names=["Typical", "Atypical"]))
+
+# -------- Evaluate Random Forest --------
+rf_pred = rf_model.predict(X_test_scaled)
+print("=== Random Forest ===")
+print("Accuracy:", accuracy_score(y_test, rf_pred))
+print(classification_report(y_test, rf_pred, target_names=["Typical", "Atypical"]))
+
+# -------- Confusion Matrix (Random Forest) --------
+cm = confusion_matrix(y_test, rf_pred)
+ConfusionMatrixDisplay(cm, display_labels=["Typical", "Atypical"]).plot()
+plt.title("Random Forest - Confusion Matrix")
+plt.savefig("dataset/confusion_matrix.png")
+print("Confusion matrix saved ")
