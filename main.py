@@ -7,6 +7,7 @@ import time
 from behavior_analyzer import BehaviorAnalyzer
 import joblib
 import numpy as np
+import pandas as pd
 
 LEFT_IRIS = [474, 475, 476, 477]
 LEFT_EYE_LEFT_CORNER = 33
@@ -260,12 +261,7 @@ while True:
             gaze_direction = "RIGHT"
         else:
             gaze_direction = "CENTER"
-        
-        
-        
-        
 
-        
         dx, dy = get_head_pose(face_landmarks.landmark, width, height)
 
         face_width = abs(right_eye_pts[0][0] - left_eye_pts[0][0])
@@ -478,7 +474,13 @@ features = np.array([[
     metrics['eye_contact_percentage']
 ]])
 
-features_scaled = scaler_ml.transform(features)
+features_df = pd.DataFrame(features, columns=[
+    'blink_rate', 'avg_closure_duration', 'avg_IBI', 'IBI_std',
+    'long_closures', 'total_fixations', 'avg_fixation_duration',
+    'avg_movement', 'gaze_variance', 'longest_no_blink',
+    'eye_contact_percentage'
+])
+features_scaled = scaler_ml.transform(features_df)
 prediction = model.predict(features_scaled)[0]
 confidence = model.predict_proba(features_scaled)[0].max() * 100
 
@@ -497,19 +499,12 @@ print(f" Prediction      : {label}")
 print(f" Confidence      : {confidence:.1f}%")
 print("----------------------------------")
 
-# -------- Ask Session Type --------
-while True:
-    session_type = input("Enter session type (typical / atypical): ").strip().lower()
-    if session_type in ["typical", "atypical"]:
-        break
-    else:
-        print("Invalid input. Please enter typical or atypical.")
 # -------- Save To CSV --------
 session_id = int(time.time())
 
 data_row = [
     session_id,
-    session_type,          # ← ADD THIS (VERY IMPORTANT)
+    label,          
    metrics['duration'],
 metrics['blink_rate'],
 metrics['avg_closure_duration'],
