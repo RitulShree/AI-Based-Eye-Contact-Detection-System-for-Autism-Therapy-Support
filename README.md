@@ -71,6 +71,10 @@ Video Input → Face Detection → Eye Landmark Extraction
 
 ---
 
+## 📸 Demo
+
+![Demo Output](photos/img.png)
+
 ### 💾 Data Logging
 
 * Session data saved to CSV
