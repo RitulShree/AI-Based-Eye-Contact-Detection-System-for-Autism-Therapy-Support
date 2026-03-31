@@ -5,6 +5,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
+import joblib
+import os
 
 # -------- Load Both CSVs --------
 cols = [
@@ -105,3 +107,12 @@ ConfusionMatrixDisplay(cm, display_labels=["Typical", "Atypical"]).plot()
 plt.title("Random Forest - Confusion Matrix")
 plt.savefig("dataset/confusion_matrix.png")
 print("Confusion matrix saved ")
+
+# -------- Save Model and Scaler --------
+os.makedirs("model", exist_ok=True)
+
+joblib.dump(rf_model, "model/eye_contact_model.pkl")
+joblib.dump(scaler, "model/feature_scaler.pkl")
+
+print("Model saved ")
+print("Scaler saved ")
