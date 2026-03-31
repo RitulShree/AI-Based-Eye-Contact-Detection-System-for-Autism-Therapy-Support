@@ -4,8 +4,9 @@ import numpy as np
 import csv
 import os
 import time
-
 from behavior_analyzer import BehaviorAnalyzer
+import joblib
+import numpy as np
 
 LEFT_IRIS = [474, 475, 476, 477]
 LEFT_EYE_LEFT_CORNER = 33
@@ -458,6 +459,43 @@ print(f"Average Fixation Duration: {metrics['avg_fixation_duration']:.3f} second
 print(f"Average Eye Movement: {metrics['avg_movement']:.3f} pixels")
 print(f"Gaze Stability Variance: {metrics['gaze_variance']:.3f}")
 print("----------------------------\n")
+
+# -------- ML Prediction --------
+model = joblib.load("model/eye_contact_model.pkl")
+scaler_ml = joblib.load("model/feature_scaler.pkl")
+
+features = np.array([[
+    metrics['blink_rate'],
+    metrics['avg_closure_duration'],
+    metrics['avg_IBI'],
+    metrics['IBI_std'],
+    metrics['long_closures'],
+    metrics['total_fixations'],
+    metrics['avg_fixation_duration'],
+    metrics['avg_movement'],
+    metrics['gaze_variance'],
+    metrics['longest_no_blink'],
+    metrics['eye_contact_percentage']
+]])
+
+features_scaled = scaler_ml.transform(features)
+prediction = model.predict(features_scaled)[0]
+confidence = model.predict_proba(features_scaled)[0].max() * 100
+
+label = "Atypical" if prediction == 1 else "Typical"
+
+print("----------------------------------")
+print(" Behavioral Eye Analysis Report")
+print("----------------------------------")
+print(f" Eye Contact     : {metrics['eye_contact_percentage']:.1f}%")
+print(f" Blink Rate      : {metrics['blink_rate']:.1f} /min")
+print(f" Fixation Count  : {metrics['total_fixations']}")
+print(f" Avg Fixation    : {metrics['avg_fixation_duration']:.2f} sec")
+print(f" Gaze Variance   : {metrics['gaze_variance']:.2f}")
+print("----------------------------------")
+print(f" Prediction      : {label}")
+print(f" Confidence      : {confidence:.1f}%")
+print("----------------------------------")
 
 # -------- Ask Session Type --------
 while True:
