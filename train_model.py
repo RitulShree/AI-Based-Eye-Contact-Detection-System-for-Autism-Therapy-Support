@@ -1,6 +1,8 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 # -------- Load Both CSVs --------
 cols = [
@@ -63,3 +65,23 @@ X_train_scaled = scaler.fit_transform(X_train)  # learn scale from train only
 X_test_scaled  = scaler.transform(X_test)        # apply same scale to test
 
 print("Scaling done ")
+
+
+# -------- Train Logistic Regression --------
+lr_model = LogisticRegression(
+    class_weight='balanced',
+    max_iter=1000,
+    random_state=42
+)
+lr_model.fit(X_train_scaled, y_train)
+print("Logistic Regression trained ✅")
+
+# -------- Train Random Forest --------
+rf_model = RandomForestClassifier(
+    n_estimators=100,
+    class_weight='balanced',
+    max_depth=4,
+    random_state=42
+)
+rf_model.fit(X_train_scaled, y_train)
+print("Random Forest trained ✅")
