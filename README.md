@@ -73,7 +73,7 @@ Video Input → Face Detection → Eye Landmark Extraction
 
 ## 📸 Demo
 
-![Demo Output](photos/img.png)
+![Demo Output](img.png)
 
 ### 💾 Data Logging
 
