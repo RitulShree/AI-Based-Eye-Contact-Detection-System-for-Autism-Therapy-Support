@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Eye Contact Analysis</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Eye Contact Analysis System</h1>
+    <p class="subtitle">Behavioral Screening Tool</p>
+
+    <button onclick="startTest()" id="startBtn">
+        Start Test
+    </button>
+
+    <div id="status">Idle</div>
+
+    <div id="report" class="hidden">
+        <h2>Session Report</h2>
+        <div class="grid">
+            <div class="card"><span>Eye Contact</span><p id="eye"></p></div>
+            <div class="card"><span>Blink Rate</span><p id="blink"></p></div>
+            <div class="card"><span>Fixations</span><p id="fix"></p></div>
+            <div class="card"><span>Gaze Variance</span><p id="gaze"></p></div>
+        </div>
+
+        <div class="result">
+            <h3 id="prediction"></h3>
+            <p id="confidence"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+function startTest() {
+    document.getElementById("status").innerText = "Running test... Please look at camera";
+    
+    fetch("http://127.0.0.1:5000/start-test")
+    .then(res => res.json())
+    .then(data => {
+        const result = JSON.parse(data.result);
+
+        document.getElementById("status").innerText = "Session Complete";
+
+        document.getElementById("eye").innerText = result.eye_contact.toFixed(1) + "%";
+        document.getElementById("blink").innerText = result.blink_rate.toFixed(1) + "/min";
+        document.getElementById("fix").innerText = result.fixations;
+        document.getElementById("gaze").innerText = result.gaze_variance.toFixed(2);
+
+        document.getElementById("prediction").innerText = "Prediction: " + result.prediction;
+        document.getElementById("confidence").innerText = "Confidence: " + result.confidence.toFixed(1) + "%";
+
+        document.getElementById("report").classList.remove("hidden");
+    });
+}
+</script>
+
+</body>
+</html>
