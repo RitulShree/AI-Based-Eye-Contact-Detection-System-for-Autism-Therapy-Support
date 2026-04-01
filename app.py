@@ -29,7 +29,18 @@ def favicon():
 @app.route("/kiosk.css")
 def styles():
     return send_from_directory(BASE_DIR, "kiosk.css")
+@app.route('/get-report/<token>')
+def get_report(token):
+    report_file = os.path.join(BASE_DIR, "reports", f"{token}.json")
 
+    if not os.path.exists(report_file):
+        return jsonify({"error": "Report not found"}), 404
+
+    return send_from_directory(
+    os.path.join(BASE_DIR, "reports"),
+    f"{token}.json",
+    as_attachment=True  # <- add this
+)
 # -------- Serve Reception --------
 @app.route("/reception")
 def reception():
@@ -97,8 +108,29 @@ def save_session():
                 round(data.get("gaze_variance"), 2),
                 "Waiting"   # default status
             ])
+                # -------- Save Detailed Report --------
+            report_path = os.path.join(BASE_DIR, "reports")
 
-        return jsonify({"status": "saved", "token": token})
+            if not os.path.exists(report_path):
+                os.makedirs(report_path)
+
+            report_file = os.path.join(report_path, f"{token}.json")
+
+            with open(report_file, "w") as f:
+                json.dump({
+                    "token": token,
+                    "name": data.get("name"),
+                    "age_group": data.get("age_group"),
+                    "prediction": data.get("prediction"),
+                    "confidence": data.get("confidence"),
+                    "metrics": {
+                        "eye_contact": data.get("eye_contact"),
+                        "blink_rate": data.get("blink_rate"),
+                        "fixations": data.get("fixations"),
+                        "gaze_variance": data.get("gaze_variance")
+                    }
+                }, f, indent=4)
+            return jsonify({"status": "saved", "token": token})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
