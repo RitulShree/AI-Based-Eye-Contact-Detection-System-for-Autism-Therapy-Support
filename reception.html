@@ -5,52 +5,12 @@
   <title>NeuroScan Reception</title>
   <link rel="icon" type="image/png" href="/favicon.ico">
 
-  <!-- ✅ CSS LINK (IMPORTANT) -->
+  <!-- ✅ CSS LINK -->
   <link rel="stylesheet" href="reception.css">
-  <
 
-  <!-- ✅ FONTS (IMPORTANT for same UI feel) -->
+  <!-- ✅ FONTS -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans&family=DM+Mono&family=Playfair+Display&display=swap" rel="stylesheet">
 </head>
-<script>
-function loadQueue() {
-  fetch("/get-history")
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.getElementById("tableBody");
-      tbody.innerHTML = "";
-
-      if (data.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='5'>No data</td></tr>";
-        return;
-      }
-
-      data.forEach(p => {
-        const isTypical = p.prediction === "Typical";
-
-        tbody.innerHTML += `
-          <tr>
-            <td>${p.token}</td>
-            <td>${p.name}</td>
-            <td>${p.age_group}</td>
-            <td>
-              <span class="tag ${isTypical ? "green" : "red"}">
-                ${p.prediction}
-              </span>
-            </td>
-            <td>${p.confidence}%</td>
-          </tr>
-        `;
-      });
-    });
-}
-
-// auto refresh every 3 sec
-setInterval(loadQueue, 3000);
-
-// initial load
-loadQueue();
-</script>
 <body>
 
 <div class="container">
@@ -58,13 +18,12 @@ loadQueue();
   <!-- HEADER -->
   <div class="header">
     <div class="logo">
-    <div class="logo-mark">
-    <div class="logo-ring"></div>
-    <div class="logo-dot"></div>
+      <div class="logo-mark">
+        <div class="logo-ring"></div>
+        <div class="logo-dot"></div>
+      </div>
+      <div class="logo-text">NeuroScan</div>
     </div>
-    <div class="logo-text">NeuroScan</div>
-</div>
-
     <div class="badge">Reception Panel</div>
   </div>
 
@@ -74,83 +33,74 @@ loadQueue();
     <h1>Patient Screening Queue</h1>
     <p>Real-time screening results</p>
   </div>
+
+  <!-- STATS -->
   <div class="stats">
+    <div class="stat-box">
+      <p>Total Patients</p>
+      <h2 id="totalPatients">0</h2>
+    </div>
 
-  <div class="stat-box">
-    <p>Total Patients</p>
-    <h2 id="totalPatients">0</h2>
+    <div class="stat-box">
+      <p>Typical</p>
+      <h2 id="typicalCount">0</h2>
+    </div>
+
+    <div class="stat-box">
+      <p>Atypical</p>
+      <h2 id="atypicalCount">0</h2>
+    </div>
+
+    <div class="stat-box">
+      <p>Waiting</p>
+      <h2 id="waitingCount">0</h2>
+    </div>
   </div>
 
-  <div class="stat-box">
-    <p>Typical</p>
-    <h2 id="typicalCount">0</h2>
+  <!-- RECEPTION GUIDE -->
+  <div class="reception-guide">
+    <h3>Reception Instructions</h3>
+    <p>
+      Patients complete a 60-second behavioral eye-contact screening at the kiosk.
+      Each completed session generates a <strong>token number</strong> and is logged in this queue.
+    </p>
+    <ul>
+      <li>Monitor newly generated tokens appearing in the table.</li>
+      <li>Call patients based on token order.</li>
+      <li>Check screening result (Typical / Atypical).</li>
+      <li>Guide the patient to the appropriate doctor or specialist.</li>
+      <li>Click <strong>Refresh</strong> to update the queue.</li>
+    </ul>
+    <p class="note">
+      ⚠️ This system is a screening tool only. Final decisions must be made by a qualified clinician.
+    </p>
   </div>
 
-  <div class="stat-box">
-    <p>Atypical</p>
-    <h2 id="atypicalCount">0</h2>
-  </div>
-
-  <div class="stat-box">
-    <p>Waiting</p>
-    <h2 id="waitingCount">0</h2>
-  </div>
-
-</div>
   <!-- PANEL -->
-   <!-- RECEPTION GUIDE -->
-<div class="reception-guide">
-  <h3>Reception Instructions</h3>
-
-  <p>
-    Patients complete a 60-second behavioral eye-contact screening at the kiosk.
-    Each completed session generates a <strong>token number</strong> and is logged in this queue.
-  </p>
-
-  <ul>
-    <li>Monitor newly generated tokens appearing in the table.</li>
-    <li>Call patients based on token order.</li>
-    <li>Check screening result (Typical / Atypical).</li>
-    <li>Guide the patient to the appropriate doctor or specialist.</li>
-    <li>Click <strong>Refresh</strong> to update the queue.</li>
-  </ul>
-
-  <p class="note">
-    ⚠️ This system is a screening tool only. Final decisions must be made by a qualified clinician.
-  </p>
-</div>
   <div class="panel">
-
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <button class="btn-refresh" onclick="loadQueue()">
-  ⟳ Refresh
-</button>
-
-      <div class="live">
-        <span></span> LIVE
-      </div>
+      <button class="btn-refresh" onclick="loadQueue()">⟳ Refresh</button>
+      <div class="live"><span></span> LIVE</div>
     </div>
 
     <!-- TABLE -->
     <table class="table">
-  <thead>
-    <tr>
-      <th>Token</th>
-      <th>Name</th>
-      <th>Age</th>
-      <th>Result</th>
-      <th>Confidence</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-
-  <tbody id="tableBody"></tbody>
-</table>
-
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Name</th>
+          <th>Age</th>
+          <th>Result</th>
+          <th>Confidence</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
   </div>
-
 </div>
+
 <script>
 function loadQueue() {
   fetch("/get-history")
@@ -163,12 +113,18 @@ function loadQueue() {
       let atypical = 0;
       let waiting = 0;
 
+      if (data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='7'>No data</td></tr>";
+        document.getElementById("totalPatients").innerText = 0;
+        document.getElementById("typicalCount").innerText = 0;
+        document.getElementById("atypicalCount").innerText = 0;
+        document.getElementById("waitingCount").innerText = 0;
+        return;
+      }
+
       data.forEach(p => {
         const isTypical = p.prediction === "Typical";
-
-        if (isTypical) typical++;
-        else atypical++;
-
+        if (isTypical) typical++; else atypical++;
         if (p.status === "Waiting") waiting++;
 
         tbody.innerHTML += `
@@ -176,17 +132,13 @@ function loadQueue() {
             <td>${p.token}</td>
             <td>${p.name}</td>
             <td>${p.age_group}</td>
-            <td>
-              <span class="tag ${isTypical ? "green" : "red"}">
-                ${p.prediction}
-              </span>
-            </td>
+            <td><span class="tag ${isTypical ? "green" : "red"}">${p.prediction}</span></td>
             <td>${p.confidence}%</td>
             <td>${p.status}</td>
             <td>
-              <button class="refer-btn" onclick="refer('${p.token}')">
-                Refer
-              </button>
+              <button onclick="viewReport('${p.token}')">View</button>
+              <button onclick="downloadReport('${p.token}')">⬇</button>
+              <button class="refer-btn" onclick="refer('${p.token}')">Refer</button>
             </td>
           </tr>
         `;
@@ -197,6 +149,17 @@ function loadQueue() {
       document.getElementById("atypicalCount").innerText = atypical;
       document.getElementById("waitingCount").innerText = waiting;
     });
+}
+
+function viewReport(token) {
+  window.open(`/get-report/${token}`, '_blank');
+}
+
+function downloadReport(token) {
+  const link = document.createElement('a');
+  link.href = `/get-report/${token}`;
+  link.download = token + ".json";
+  link.click();
 }
 
 function refer(token) {
@@ -211,9 +174,12 @@ function refer(token) {
   .then(() => loadQueue());
 }
 
-// auto refresh
+// auto refresh every 3 seconds
 setInterval(loadQueue, 3000);
+
+// initial load
 loadQueue();
 </script>
+
 </body>
 </html>
