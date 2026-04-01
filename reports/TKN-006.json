@@ -1,0 +1,13 @@
+{
+    "token": "TKN-006",
+    "name": "Anonymous",
+    "age_group": "18+",
+    "prediction": "Atypical",
+    "confidence": 53.90907037278366,
+    "metrics": {
+        "eye_contact": 45.78651685393258,
+        "blink_rate": 45.98471088119805,
+        "fixations": 46,
+        "gaze_variance": 1.065999029327692
+    }
+}
