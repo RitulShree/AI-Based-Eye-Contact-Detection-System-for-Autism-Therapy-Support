@@ -23,7 +23,9 @@ def get_next_token():
 @app.route("/")
 def index():
     return send_from_directory(BASE_DIR, "kiosk.html")
-
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(BASE_DIR, 'favicon.png', mimetype='image/png')
 @app.route("/kiosk.css")
 def styles():
     return send_from_directory(BASE_DIR, "kiosk.css")
