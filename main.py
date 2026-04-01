@@ -4,6 +4,7 @@ import numpy as np
 import csv
 import os
 import time
+import json
 from behavior_analyzer import BehaviorAnalyzer
 import joblib
 import numpy as np
@@ -526,6 +527,17 @@ print("FULL PATH:", os.path.abspath("dataset/gaze_dataset.csv"))
 print("FILE EXISTS:", os.path.isfile("dataset/gaze_dataset.csv"))
 
 print("Session saved to CSV successfully.")
+
+report = {
+    "eye_contact": float(metrics["eye_contact_percentage"]),
+    "blink_rate": float(metrics["blink_rate"]),
+    "fixations": int(metrics["total_fixations"]),
+    "gaze_variance": float(metrics["gaze_variance"]),
+    "prediction": label,
+    "confidence": float(confidence)
+}
+
+print(json.dumps(report))
 
 cap.release()
 cv.destroyAllWindows()

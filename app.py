@@ -22,11 +22,11 @@ def get_next_token():
 # -------- Serve Kiosk --------
 @app.route("/")
 def index():
-    return send_from_directory(BASE_DIR, "index.html")
+    return send_from_directory(BASE_DIR, "kiosk.html")
 
-@app.route("/styles.css")
+@app.route("/kiosk.css")
 def styles():
-    return send_from_directory(BASE_DIR, "styles.css")
+    return send_from_directory(BASE_DIR, "kiosk.css")
 
 # -------- Serve Reception --------
 @app.route("/reception")
