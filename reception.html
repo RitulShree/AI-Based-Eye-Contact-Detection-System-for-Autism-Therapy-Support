@@ -1,77 +1,199 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>NeuroScan | Reception Dashboard</title>
+  <meta charset="UTF-8">
+  <title>NeuroScan Reception</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="reception.css" />
+  <!-- ✅ CSS LINK (IMPORTANT) -->
+  <link rel="stylesheet" href="reception.css">
+
+  <!-- ✅ FONTS (IMPORTANT for same UI feel) -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans&family=DM+Mono&family=Playfair+Display&display=swap" rel="stylesheet">
 </head>
-
-<body>
-  <div class="container">
-
-    <!-- HEADER -->
-    <header class="header">
-      <div class="header-logo">
-        <span class="logo-text">NeuroScan</span>
-      </div>
-      <div class="header-badge">Reception Panel</div>
-    </header>
-
-    <!-- TITLE -->
-    <div class="dashboard-header">
-      <h1>Patient Screening Queue</h1>
-      <button onclick="loadPatients()" class="btn-refresh">Refresh</button>
-    </div>
-
-    <!-- TABLE -->
-    <div class="table-wrap">
-      <table class="patient-table">
-        <thead>
-          <tr>
-            <th>Token</th>
-            <th>Name</th>
-            <th>Age</th>
-            <th>Result</th>
-            <th>Confidence</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-
-  </div>
-
 <script>
-function loadPatients() {
-  fetch('/get-history')
+function loadQueue() {
+  fetch("/get-history")
     .then(res => res.json())
     .then(data => {
-      const body = document.getElementById("tableBody");
-      body.innerHTML = "";
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5'>No data</td></tr>";
+        return;
+      }
 
       data.forEach(p => {
-        body.innerHTML += `
+        const isTypical = p.prediction === "Typical";
+
+        tbody.innerHTML += `
           <tr>
-            <td class="mono">${p.token}</td>
+            <td>${p.token}</td>
             <td>${p.name}</td>
             <td>${p.age_group}</td>
             <td>
-              <span class="${p.prediction === 'Typical' ? 'badge-good' : 'badge-bad'}">
+              <span class="tag ${isTypical ? "green" : "red"}">
+                ${p.prediction}
+              </span>
+            </td>
+            <td>${p.confidence}%</td>
+          </tr>
+        `;
+      });
+    });
+}
+
+// auto refresh every 3 sec
+setInterval(loadQueue, 3000);
+
+// initial load
+loadQueue();
+</script>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+    <div class="logo-mark">
+    <div class="logo-ring"></div>
+    <div class="logo-dot"></div>
+    </div>
+    <div class="logo-text">NeuroScan</div>
+</div>
+
+    <div class="badge">Reception Panel</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <small>QUEUE MONITORING</small>
+    <h1>Patient Screening Queue</h1>
+    <p>Real-time screening results</p>
+  </div>
+  <div class="stats">
+
+  <div class="stat-box">
+    <p>Total Patients</p>
+    <h2 id="totalPatients">0</h2>
+  </div>
+
+  <div class="stat-box">
+    <p>Typical</p>
+    <h2 id="typicalCount">0</h2>
+  </div>
+
+  <div class="stat-box">
+    <p>Atypical</p>
+    <h2 id="atypicalCount">0</h2>
+  </div>
+
+  <div class="stat-box">
+    <p>Waiting</p>
+    <h2 id="waitingCount">0</h2>
+  </div>
+
+</div>
+  <!-- PANEL -->
+   <!-- RECEPTION GUIDE -->
+<div class="reception-guide">
+  <h3>Reception Instructions</h3>
+
+  <p>
+    Patients complete a 60-second behavioral eye-contact screening at the kiosk.
+    Each completed session generates a <strong>token number</strong> and is logged in this queue.
+  </p>
+
+  <ul>
+    <li>Monitor newly generated tokens appearing in the table.</li>
+    <li>Call patients based on token order.</li>
+    <li>Check screening result (Typical / Atypical).</li>
+    <li>Guide the patient to the appropriate doctor or specialist.</li>
+    <li>Click <strong>Refresh</strong> to update the queue.</li>
+  </ul>
+
+  <p class="note">
+    ⚠️ This system is a screening tool only. Final decisions must be made by a qualified clinician.
+  </p>
+</div>
+  <div class="panel">
+
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn-refresh" onclick="loadQueue()">
+  ⟳ Refresh
+</button>
+
+      <div class="live">
+        <span></span> LIVE
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <table class="table">
+  <thead>
+    <tr>
+      <th>Token</th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Result</th>
+      <th>Confidence</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+
+  <tbody id="tableBody"></tbody>
+</table>
+
+  </div>
+
+</div>
+<script>
+function loadQueue() {
+  fetch("/get-history")
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      let typical = 0;
+      let atypical = 0;
+      let waiting = 0;
+
+      data.forEach(p => {
+        const isTypical = p.prediction === "Typical";
+
+        if (isTypical) typical++;
+        else atypical++;
+
+        if (p.status === "Waiting") waiting++;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${p.token}</td>
+            <td>${p.name}</td>
+            <td>${p.age_group}</td>
+            <td>
+              <span class="tag ${isTypical ? "green" : "red"}">
                 ${p.prediction}
               </span>
             </td>
             <td>${p.confidence}%</td>
             <td>${p.status}</td>
             <td>
-              <button onclick="refer('${p.token}')" class="btn-action">Refer</button>
+              <button class="refer-btn" onclick="refer('${p.token}')">
+                Refer
+              </button>
             </td>
           </tr>
         `;
       });
+
+      document.getElementById("totalPatients").innerText = data.length;
+      document.getElementById("typicalCount").innerText = typical;
+      document.getElementById("atypicalCount").innerText = atypical;
+      document.getElementById("waitingCount").innerText = waiting;
     });
 }
 
@@ -79,16 +201,17 @@ function refer(token) {
   const doctor = prompt("Enter doctor name:");
   if (!doctor) return;
 
-  fetch('/refer-patient', {
+  fetch("/refer-patient", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ token, doctor })
   })
-  .then(() => loadPatients());
+  .then(() => loadQueue());
 }
 
-loadPatients();
+// auto refresh
+setInterval(loadQueue, 3000);
+loadQueue();
 </script>
-
 </body>
 </html>
