@@ -93,7 +93,7 @@
           <th>Result</th>
           <th>Confidence</th>
           <th>Status</th>
-          <th>Actions</th>
+          <th>Actions</th> <!-- Report / Refer -->
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -136,8 +136,8 @@ function loadQueue() {
             <td>${p.confidence}%</td>
             <td>${p.status}</td>
             <td>
-              <button onclick="viewReport('${p.token}')">View</button>
-              <button onclick="downloadReport('${p.token}')">⬇</button>
+              
+              <button onclick="downloadReport('${p.token}')">Report</button>
               <button class="refer-btn" onclick="refer('${p.token}')">Refer</button>
             </td>
           </tr>
