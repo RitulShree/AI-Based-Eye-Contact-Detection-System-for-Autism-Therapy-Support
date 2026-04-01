@@ -1,0 +1,113 @@
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --accent: #2563eb;
+  --green: #16a34a;
+  --red: #dc2626;
+  --radius: 12px;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+}
+
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 30px;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.logo-text {
+  font-family: "Playfair Display";
+  font-size: 1.5rem;
+}
+
+.header-badge {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* TITLE */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* TABLE */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.patient-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.patient-table th {
+  background: #f1f5f9;
+  text-align: left;
+  padding: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.patient-table td {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* BADGES */
+.badge-good {
+  background: #dcfce7;
+  color: var(--green);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.badge-bad {
+  background: #fee2e2;
+  color: var(--red);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* BUTTONS */
+.btn-refresh {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.btn-action {
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.mono {
+  font-family: monospace;
+}
