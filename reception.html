@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NeuroScan | Reception Dashboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="reception.css" />
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-logo">
+        <span class="logo-text">NeuroScan</span>
+      </div>
+      <div class="header-badge">Reception Panel</div>
+    </header>
+
+    <!-- TITLE -->
+    <div class="dashboard-header">
+      <h1>Patient Screening Queue</h1>
+      <button onclick="loadPatients()" class="btn-refresh">Refresh</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table class="patient-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Result</th>
+            <th>Confidence</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+<script>
+function loadPatients() {
+  fetch('/get-history')
+    .then(res => res.json())
+    .then(data => {
+      const body = document.getElementById("tableBody");
+      body.innerHTML = "";
+
+      data.forEach(p => {
+        body.innerHTML += `
+          <tr>
+            <td class="mono">${p.token}</td>
+            <td>${p.name}</td>
+            <td>${p.age_group}</td>
+            <td>
+              <span class="${p.prediction === 'Typical' ? 'badge-good' : 'badge-bad'}">
+                ${p.prediction}
+              </span>
+            </td>
+            <td>${p.confidence}%</td>
+            <td>${p.status}</td>
+            <td>
+              <button onclick="refer('${p.token}')" class="btn-action">Refer</button>
+            </td>
+          </tr>
+        `;
+      });
+    });
+}
+
+function refer(token) {
+  const doctor = prompt("Enter doctor name:");
+  if (!doctor) return;
+
+  fetch('/refer-patient', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, doctor })
+  })
+  .then(() => loadPatients());
+}
+
+loadPatients();
+</script>
+
+</body>
+</html>
