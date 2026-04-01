@@ -237,14 +237,154 @@
             tool. It does not constitute a medical diagnosis. All results must
             be interpreted by a qualified healthcare professional.
           </p>
-          <button onclick="newSession()" class="btn-secondary">
-            &#8635; New Session
-          </button>
+          <div class="footer-buttons">
+            <button onclick="newSession()" class="btn-secondary">
+              &#8635; New Session
+            </button>
+            <button onclick="loadHistory()" class="btn-secondary btn-history">
+              &#9776; View History
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABOUT SECTION -->
+      <div class="about-section">
+        <div class="about-header" onclick="toggleAbout()">
+          <div>
+            <p class="section-eyebrow">Documentation</p>
+            <h2 class="about-title">How It Works</h2>
+          </div>
+          <div class="about-toggle" id="aboutToggle">&#9660;</div>
+        </div>
+
+        <div class="about-body hidden" id="aboutBody">
+          <div class="about-grid">
+            <div class="about-card">
+              <div class="about-card-num">01</div>
+              <h4 class="about-card-title">What Is Measured</h4>
+              <p class="about-card-text">
+                The system tracks 11 behavioral metrics using your webcam,
+                including eye contact percentage, blink rate, gaze variance,
+                fixation count, and inter-blink interval, during a 60-second
+                session.
+              </p>
+            </div>
+
+            <div class="about-card">
+              <div class="about-card-num">02</div>
+              <h4 class="about-card-title">How the ML Model Works</h4>
+              <p class="about-card-text">
+                A Random Forest classifier trained on 92 labeled sessions
+                (46 typical, 46 atypical) analyzes the extracted metrics and
+                classifies gaze behavior. The model achieved 84% accuracy with
+                cross-validation.
+              </p>
+            </div>
+
+            <div class="about-card">
+              <div class="about-card-num">03</div>
+              <h4 class="about-card-title">What Typical Means</h4>
+              <p class="about-card-text">
+                Typical gaze behavior indicates eye contact percentage and
+                fixation patterns consistent with normative behavioral data. It
+                does not mean the person has no condition, only that gaze
+                patterns appear within expected range.
+              </p>
+            </div>
+
+            <div class="about-card">
+              <div class="about-card-num">04</div>
+              <h4 class="about-card-title">What Atypical Means</h4>
+              <p class="about-card-text">
+                Atypical gaze behavior indicates patterns outside the normative
+                range, including reduced eye contact, irregular fixations, or
+                high gaze variance. This is a behavioral flag, not a diagnosis
+                of autism.
+              </p>
+            </div>
+
+            <div class="about-card">
+              <div class="about-card-num">05</div>
+              <h4 class="about-card-title">System Limitations</h4>
+              <p class="about-card-text">
+                This tool is a behavioral screening aid only. Lighting
+                conditions, camera quality, and patient cooperation can affect
+                results. It cannot replace a formal clinical evaluation or
+                standardized diagnostic assessment.
+              </p>
+            </div>
+
+            <div class="about-card">
+              <div class="about-card-num">06</div>
+              <h4 class="about-card-title">Intended Use</h4>
+              <p class="about-card-text">
+                Designed for use at hospital entry points as a first-level
+                behavioral screening tool. Results should always be reviewed by
+                a qualified clinician before any action is taken.
+              </p>
+            </div>
+          </div>
+
+          <div class="model-stats">
+            <div class="stat-item">
+              <p class="stat-value">84%</p>
+              <p class="stat-label">Model Accuracy</p>
+            </div>
+            <div class="stat-item">
+              <p class="stat-value">92</p>
+              <p class="stat-label">Training Sessions</p>
+            </div>
+            <div class="stat-item">
+              <p class="stat-value">11</p>
+              <p class="stat-label">Behavioral Features</p>
+            </div>
+            <div class="stat-item">
+              <p class="stat-value">60s</p>
+              <p class="stat-label">Session Duration</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- ERROR -->
       <div id="status" class="hidden error-msg"></div>
+
+      <!-- SESSION HISTORY -->
+      <div id="historySection" class="screen hidden">
+        <div class="history-header">
+          <div>
+            <p class="section-eyebrow">Session Log</p>
+            <h2 class="history-title">Screening History</h2>
+          </div>
+          <button
+            onclick="toggleHistory()"
+            class="btn-secondary"
+            id="historyToggleBtn"
+          >
+            &#9650; Hide History
+          </button>
+        </div>
+
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Eye Contact</th>
+                <th>Blink Rate</th>
+                <th>Fixations</th>
+                <th>Result</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -299,6 +439,7 @@
       }
 
       function showResult(result) {
+        saveSession(result);
         document.getElementById("running").classList.add("hidden");
         document.getElementById("report").classList.remove("hidden");
 
@@ -417,8 +558,81 @@
         document.getElementById("patientName").value = "";
         document.getElementById("report").classList.add("hidden");
         document.getElementById("status").classList.add("hidden");
+        document.getElementById("historySection").classList.add("hidden");
         document.getElementById("progressFill").style.width = "0%";
+        document.getElementById("progressTimer").innerText = "60s remaining";
         document.getElementById("welcome").classList.remove("hidden");
+      }
+
+      function saveSession(result) {
+        const name = document.getElementById("patientName").value || "Anonymous";
+        fetch("/save-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name,
+            age_group: selectedAge,
+            prediction: result.prediction,
+            confidence: result.confidence,
+            eye_contact: result.eye_contact,
+            blink_rate: result.blink_rate,
+            fixations: result.fixations,
+            gaze_variance: result.gaze_variance,
+          }),
+        });
+      }
+
+      function loadHistory() {
+        fetch("/get-history")
+          .then((res) => res.json())
+          .then((sessions) => {
+            const tbody = document.getElementById("historyBody");
+            tbody.innerHTML = "";
+
+            if (sessions.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="9" class="no-data">No sessions recorded yet.</td></tr>';
+            } else {
+              sessions.forEach((s) => {
+                const isTypical = s.prediction === "Typical";
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.date}</td>
+                        <td class="mono">${s.time}</td>
+                        <td>${s.name}</td>
+                        <td>${s.age_group}</td>
+                        <td>${s.eye_contact}%</td>
+                        <td>${s.blink_rate}/min</td>
+                        <td>${s.fixations}</td>
+                        <td>
+                            <span class="badge ${isTypical ? "badge-typical" : "badge-atypical"}">
+                                ${s.prediction}
+                            </span>
+                        </td>
+                        <td class="mono">${s.confidence}%</td>
+                    </tr>`;
+              });
+            }
+
+            document.getElementById("historySection").classList.remove("hidden");
+            document
+              .getElementById("historySection")
+              .scrollIntoView({ behavior: "smooth" });
+          });
+      }
+
+      function toggleHistory() {
+        const section = document.getElementById("historySection");
+        section.classList.add("hidden");
+      }
+
+      function toggleAbout() {
+        const body = document.getElementById("aboutBody");
+        const toggle = document.getElementById("aboutToggle");
+        body.classList.toggle("hidden");
+        toggle.innerHTML = body.classList.contains("hidden")
+          ? "&#9660;"
+          : "&#9650;";
       }
     </script>
   </body>
