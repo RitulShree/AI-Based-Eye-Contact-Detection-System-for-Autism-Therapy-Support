@@ -1,61 +1,425 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Eye Contact Analysis</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>NeuroScan | Eye Contact Analysis System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
 
-<div class="container">
-    <h1>Eye Contact Analysis System</h1>
-    <p class="subtitle">Behavioral Screening Tool</p>
+    <div class="container">
+      <!-- HEADER -->
+      <header class="header">
+        <div class="header-logo">
+          <div class="logo-mark">
+            <div class="logo-ring"></div>
+            <div class="logo-dot"></div>
+          </div>
+          <span class="logo-text">NeuroScan</span>
+        </div>
+        <div class="header-badge">Clinical Screening Tool v1.0</div>
+      </header>
 
-    <button onclick="startTest()" id="startBtn">
-        Start Test
-    </button>
-
-    <div id="status">Idle</div>
-
-    <div id="report" class="hidden">
-        <h2>Session Report</h2>
-        <div class="grid">
-            <div class="card"><span>Eye Contact</span><p id="eye"></p></div>
-            <div class="card"><span>Blink Rate</span><p id="blink"></p></div>
-            <div class="card"><span>Fixations</span><p id="fix"></p></div>
-            <div class="card"><span>Gaze Variance</span><p id="gaze"></p></div>
+      <!-- WELCOME SCREEN -->
+      <div id="welcome" class="screen screen-welcome">
+        <div class="welcome-hero">
+          <p class="section-eyebrow">Autism Behavioral Screening</p>
+          <h1 class="hero-title">
+            Eye Contact<br /><span class="accent">Analysis System</span>
+          </h1>
+          <p class="hero-sub">
+            A non-invasive 60-second behavioral gaze analysis tool designed to
+            support early autism spectrum screening in clinical environments.
+          </p>
         </div>
 
-        <div class="result">
-            <h3 id="prediction"></h3>
-            <p id="confidence"></p>
+        <div class="form-panel">
+          <h3 class="form-title">Patient Information</h3>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"
+                >Patient Name <span class="optional">(optional)</span></label
+              >
+              <input
+                type="text"
+                id="patientName"
+                class="form-input"
+                placeholder="Enter patient name"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age Group</label>
+              <div class="age-selector">
+                <button
+                  class="age-btn"
+                  data-age="2-5"
+                  onclick="selectAge(this)"
+                >
+                  2–5 yrs
+                </button>
+                <button
+                  class="age-btn"
+                  data-age="6-10"
+                  onclick="selectAge(this)"
+                >
+                  6–10 yrs
+                </button>
+                <button
+                  class="age-btn"
+                  data-age="11-17"
+                  onclick="selectAge(this)"
+                >
+                  11–17 yrs
+                </button>
+                <button
+                  class="age-btn"
+                  data-age="18+"
+                  onclick="selectAge(this)"
+                >
+                  18+ yrs
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="instruction-box">
+            <div class="instruction-item">
+              <div class="instr-num">01</div>
+              <p>
+                Ensure the patient is seated comfortably at eye level with the
+                camera.
+              </p>
+            </div>
+            <div class="instruction-item">
+              <div class="instr-num">02</div>
+              <p>
+                Ask the patient to look directly at the screen during the
+                session.
+              </p>
+            </div>
+            <div class="instruction-item">
+              <div class="instr-num">03</div>
+              <p>
+                The session will run automatically for 60 seconds. Do not
+                interrupt.
+              </p>
+            </div>
+          </div>
+
+          <div class="disclaimer">
+            <span class="disclaimer-icon">&#9432;</span>
+            This tool provides behavioral classification only. It is not a
+            diagnostic instrument. Results should be reviewed by a qualified
+            clinician.
+          </div>
+
+          <button onclick="startTest()" class="btn-primary" id="startBtn">
+            <span>Begin Screening</span>
+            <div class="btn-arrow">&#8594;</div>
+          </button>
         </div>
+      </div>
+
+      <!-- RUNNING SCREEN -->
+      <div id="running" class="screen hidden">
+        <div class="running-center">
+          <div class="pulse-ring-container">
+            <div class="pulse-ring pr1"></div>
+            <div class="pulse-ring pr2"></div>
+            <div class="pulse-ring pr3"></div>
+            <div class="camera-icon">
+              <div class="cam-lens"></div>
+            </div>
+          </div>
+          <h2 class="running-title">Session In Progress</h2>
+          <p class="running-sub">
+            Please maintain eye contact with the screen.<br />Do not move or
+            look away.
+          </p>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-labels">
+              <span>0s</span>
+              <span id="progressTimer">60s remaining</span>
+              <span>60s</span>
+            </div>
+          </div>
+          <div class="live-indicators">
+            <div class="live-dot"></div>
+            <span>Recording behavioral data</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT SCREEN -->
+      <div id="report" class="screen hidden">
+        <div class="result-header">
+          <div>
+            <p class="section-eyebrow">Screening Complete</p>
+            <h2 class="result-title">Behavioral Analysis Report</h2>
+          </div>
+          <div class="result-meta" id="resultMeta"></div>
+        </div>
+
+        <!-- Prediction Banner -->
+        <div class="prediction-banner" id="predictionBanner">
+          <div class="pred-left">
+            <div class="pred-icon" id="predIcon"></div>
+            <div>
+              <p class="pred-label">ML Classification</p>
+              <h2 class="pred-value" id="predValue"></h2>
+            </div>
+          </div>
+          <div class="pred-right">
+            <p class="conf-label">Confidence Score</p>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-track">
+                <div class="conf-bar-fill" id="confBar"></div>
+              </div>
+              <span class="conf-percent" id="confPercent"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <p class="metric-label">Eye Contact</p>
+            <p class="metric-value" id="eye"></p>
+            <div class="metric-bar-wrap">
+              <div class="metric-bar" id="eyeBar"></div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <p class="metric-label">Blink Rate</p>
+            <p class="metric-value" id="blink"></p>
+            <p class="metric-ref">Normal: 15–20/min</p>
+          </div>
+          <div class="metric-card">
+            <p class="metric-label">Total Fixations</p>
+            <p class="metric-value" id="fix"></p>
+            <p class="metric-ref">Higher = more stable gaze</p>
+          </div>
+          <div class="metric-card">
+            <p class="metric-label">Gaze Variance</p>
+            <p class="metric-value" id="gaze"></p>
+            <p class="metric-ref">Lower = more stable</p>
+          </div>
+        </div>
+
+        <!-- Clinical Recommendation -->
+        <div class="recommendation-box" id="recommendationBox">
+          <div class="rec-header">
+            <div class="rec-title-wrap">
+              <div class="rec-icon-box" id="recIconBox"></div>
+              <h3 class="rec-title">Clinical Recommendation</h3>
+            </div>
+            <div class="age-badge" id="ageBadge"></div>
+          </div>
+          <p class="rec-body" id="recBody"></p>
+          <div class="rec-actions" id="recActions"></div>
+        </div>
+
+        <div class="result-footer">
+          <p class="result-disclaimer">
+            &#9432; This report is generated by an AI-based behavioral screening
+            tool. It does not constitute a medical diagnosis. All results must
+            be interpreted by a qualified healthcare professional.
+          </p>
+          <button onclick="newSession()" class="btn-secondary">
+            &#8635; New Session
+          </button>
+        </div>
+      </div>
+
+      <!-- ERROR -->
+      <div id="status" class="hidden error-msg"></div>
     </div>
-</div>
 
-<script>
-function startTest() {
-    document.getElementById("status").innerText = "Running test... Please look at camera";
-    
-    fetch("http://127.0.0.1:5000/start-test")
-    .then(res => res.json())
-    .then(data => {
-        const result = JSON.parse(data.result);
+    <script>
+      let selectedAge = "";
+      let progressInterval = null;
 
-        document.getElementById("status").innerText = "Session Complete";
+      function selectAge(btn) {
+        document
+          .querySelectorAll(".age-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedAge = btn.getAttribute("data-age");
+      }
 
-        document.getElementById("eye").innerText = result.eye_contact.toFixed(1) + "%";
-        document.getElementById("blink").innerText = result.blink_rate.toFixed(1) + "/min";
-        document.getElementById("fix").innerText = result.fixations;
-        document.getElementById("gaze").innerText = result.gaze_variance.toFixed(2);
+      function startTest() {
+        if (!selectedAge) {
+          alert("Please select an age group before starting.");
+          return;
+        }
 
-        document.getElementById("prediction").innerText = "Prediction: " + result.prediction;
-        document.getElementById("confidence").innerText = "Confidence: " + result.confidence.toFixed(1) + "%";
+        document.getElementById("welcome").classList.add("hidden");
+        document.getElementById("running").classList.remove("hidden");
 
+        // Animate progress bar
+        let elapsed = 0;
+        const total = 60;
+        progressInterval = setInterval(() => {
+          elapsed++;
+          const pct = (elapsed / total) * 100;
+          document.getElementById("progressFill").style.width = pct + "%";
+          document.getElementById("progressTimer").innerText =
+            total - elapsed + "s remaining";
+          if (elapsed >= total) clearInterval(progressInterval);
+        }, 1000);
+
+        fetch("/start-test")
+          .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+          .then(({ ok, data }) => {
+            clearInterval(progressInterval);
+            if (!ok)
+              throw new Error(data.details || data.error || "Test failed");
+
+            showResult(data);
+          })
+          .catch((error) => {
+            clearInterval(progressInterval);
+            document.getElementById("running").classList.add("hidden");
+            document.getElementById("status").classList.remove("hidden");
+            document.getElementById("status").innerText =
+              "Error: " + error.message;
+          });
+      }
+
+      function showResult(result) {
+        document.getElementById("running").classList.add("hidden");
         document.getElementById("report").classList.remove("hidden");
-    });
-}
-</script>
 
-</body>
+        const isTypical = result.prediction === "Typical";
+        const name =
+          document.getElementById("patientName").value || "Anonymous";
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+        const timeStr = now.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        // Meta
+        document.getElementById("resultMeta").innerHTML = `
+        <p class="meta-name">${name}</p>
+        <p class="meta-info">Age: ${selectedAge} &nbsp;|&nbsp; ${dateStr} &nbsp;|&nbsp; ${timeStr}</p>
+    `;
+
+        // Prediction banner
+        const banner = document.getElementById("predictionBanner");
+        banner.className =
+          "prediction-banner " +
+          (isTypical ? "banner-typical" : "banner-atypical");
+
+        document.getElementById("predIcon").innerHTML = isTypical
+          ? '<div class="icon-check">&#10003;</div>'
+          : '<div class="icon-warn">&#9650;</div>';
+
+        document.getElementById("predValue").innerText = isTypical
+          ? "Typical Gaze Behavior"
+          : "Atypical Gaze Behavior";
+
+        const conf = result.confidence.toFixed(1);
+        document.getElementById("confPercent").innerText = conf + "%";
+        setTimeout(() => {
+          document.getElementById("confBar").style.width = conf + "%";
+          document.getElementById("confBar").style.background = isTypical
+            ? "#22c55e"
+            : "#ef4444";
+        }, 300);
+
+        // Metrics
+        const eyeVal = result.eye_contact.toFixed(1);
+        document.getElementById("eye").innerText = eyeVal + "%";
+        document.getElementById("blink").innerText =
+          result.blink_rate.toFixed(1) + "/min";
+        document.getElementById("fix").innerText = result.fixations;
+        document.getElementById("gaze").innerText =
+          result.gaze_variance.toFixed(2);
+        setTimeout(() => {
+          document.getElementById("eyeBar").style.width = eyeVal + "%";
+          document.getElementById("eyeBar").style.background =
+            eyeVal > 60 ? "#22c55e" : eyeVal > 40 ? "#facc15" : "#ef4444";
+        }, 400);
+
+        // Recommendation
+        const recBox = document.getElementById("recommendationBox");
+        recBox.className =
+          "recommendation-box " + (isTypical ? "rec-typical" : "rec-atypical");
+
+        document.getElementById("recIconBox").innerHTML = isTypical
+          ? '<span style="color:#22c55e;font-size:22px;">&#10003;</span>'
+          : '<span style="color:#ef4444;font-size:22px;">&#9650;</span>';
+
+        document.getElementById("ageBadge").innerText =
+          "Age Group: " + selectedAge;
+
+        const recText = getRecommendation(isTypical, selectedAge, result);
+        document.getElementById("recBody").innerHTML = recText.body;
+        document.getElementById("recActions").innerHTML = recText.actions;
+      }
+
+      function getRecommendation(isTypical, age, result) {
+        if (isTypical) {
+          return {
+            body: `The patient's gaze behavior falls <strong>within the typical range</strong> for the ${age} age group. Eye contact percentage and fixation patterns are consistent with normative behavioral data. <strong>No immediate specialist consultation is indicated</strong> based on this screening.`,
+            actions: `<div class="action-item action-ok"><strong>Next Step:</strong> Routine follow-up at next scheduled visit. No further action required at this time.</div>`,
+          };
+        } else {
+          let ageSpecific = "";
+          if (age === "2-5") {
+            ageSpecific =
+              "Early behavioral intervention is most effective in this age group. Early referral is strongly advised.";
+          } else if (age === "6-10") {
+            ageSpecific =
+              "School-age children benefit significantly from early support programs. A developmental assessment is recommended.";
+          } else if (age === "11-17") {
+            ageSpecific =
+              "Adolescent behavioral patterns should be evaluated in context of developmental history.";
+          } else {
+            ageSpecific =
+              "Adult presentations of atypical gaze behavior should be assessed alongside full clinical history.";
+          }
+
+          return {
+            body: `The patient's gaze behavior shows <strong>atypical patterns</strong> compared to normative data for the ${age} age group. Eye contact percentage and gaze stability metrics fall outside the typical range. <strong>A specialist consultation is recommended</strong> for comprehensive evaluation. ${ageSpecific}`,
+            actions: `
+                <div class="action-item action-warn"><strong>Recommended Action:</strong> Refer to a developmental pediatrician or child psychiatrist for comprehensive autism spectrum evaluation.</div>
+                <div class="action-item action-info"><strong>Suggested Assessment:</strong> Consider formal evaluation using standardized tools (ADOS-2, ADI-R) as clinically appropriate.</div>
+                <div class="action-item action-info"><strong>Note to Clinician:</strong> This screening result is one data point. A full clinical interview and developmental history are essential for any diagnosis.</div>
+            `,
+          };
+        }
+      }
+
+      function newSession() {
+        selectedAge = "";
+        document
+          .querySelectorAll(".age-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("patientName").value = "";
+        document.getElementById("report").classList.add("hidden");
+        document.getElementById("status").classList.add("hidden");
+        document.getElementById("progressFill").style.width = "0%";
+        document.getElementById("welcome").classList.remove("hidden");
+      }
+    </script>
+  </body>
 </html>
